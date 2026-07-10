@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinéfilo — Cuestionario de Películas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Courier+Prime:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --curtain: #2b0f14;
+    --curtain-deep: #1a0509;
+    --gold: #e8b84b;
+    --gold-dim: #a9812f;
+    --paper: #f2e8d5;
+    --paper-dim: #e3d6b8;
+    --ink: #241a12;
+    --ok: #4c7a5b;
+    --bad: #b6432f;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0; min-height:100vh;
+    background: var(--curtain);
+    color: var(--paper);
+    font-family: 'Libre Baskerville', serif;
+  }
+
+  body{
+    position:relative;
+    overflow-x:hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 32px 16px 64px;
+  }
+
+  /* film grain */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    opacity:0.06;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    z-index: 50;
+    mix-blend-mode: overlay;
+  }
+
+  /* velvet curtain vignette */
+  body::after{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    background: radial-gradient(ellipse at 50% 30%, transparent 0%, transparent 40%, rgba(0,0,0,0.55) 100%);
+    z-index: 49;
+  }
+
+  .stage{
+    width:100%;
+    max-width: 640px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---------- MARQUEE HEADER ---------- */
+  .marquee{
+    position:relative;
+    width:100%;
+    text-align:center;
+    padding: 22px 10px 26px;
+    margin-bottom: 28px;
+  }
+  .marquee-bulbs{
+    display:flex;
+    justify-content:space-between;
+    padding: 0 6px;
+    margin-bottom: 10px;
+  }
+  .marquee-bulbs span{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--gold);
+    box-shadow: 0 0 6px 2px rgba(232,184,75,0.7);
+    animation: bulbflicker 1.6s infinite ease-in-out;
+  }
+  .marquee-bulbs span:nth-child(odd){ animation-delay: 0.4s; }
+  .marquee-bulbs span:nth-child(3n){ animation-delay: 0.8s; }
+  @keyframes bulbflicker{
+    0%, 100%{ opacity:1; }
+    50%{ opacity:0.35; }
+  }
+  .marquee h1{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing: 0.14em;
+    font-size: clamp(2.4rem, 9vw, 3.6rem);
+    color: var(--gold);
+    margin: 0;
+    text-shadow: 0 0 18px rgba(232,184,75,0.45), 0 2px 0 rgba(0,0,0,0.4);
+  }
+  .marquee .sub{
+    font-family:'Courier Prime', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    margin-top: 6px;
+  }
+  .marquee-bulbs.bottom{ margin-top:10px; margin-bottom:0; }
+
+  /* ---------- FILM STRIP PERFORATION ---------- */
+  .filmstrip{
+    display:flex;
+    width:100%;
+    justify-content:space-between;
+    padding: 0 4px;
+  }
+  .filmstrip span{
+    width:14px; height:9px;
+    background: var(--curtain-deep);
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4);
+  }
+
+  /* ---------- CARD (TICKET) ---------- */
+  .ticket{
+    position:relative;
+    width:100%;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 30px 28px 26px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.05) inset;
+  }
+
+  .ticket::before, .ticket::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    width: 26px; height: 26px;
+    background: var(--curtain);
+    border-radius:50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.15) inset;
+  }
+  .ticket::before{ left: -13px; }
+  .ticket::after{ right: -13px; }
+
+  /* ---------- INTRO SCREEN ---------- */
+  #intro .reel{
+    width: 110px; height:110px;
+    margin: 6px auto 20px;
+    position:relative;
+  }
+  #intro .reel svg{ width:100%; height:100%; animation: spin 9s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  #intro h2{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing:0.06em;
+    font-size: 1.9rem;
+    text-align:center;
+    margin: 0 0 10px;
+    color: var(--curtain);
+  }
+  #intro p.lead{
+    text-align:center;
+    font-size: 0.98rem;
+    line-height:1.55;
+    color: #4a3a2c;
+    margin: 0 0 22px;
+  }
+  #intro .facts{
+    display:flex;
+    justify-content:center;
+    gap: 22px;
+    font-family:'Courier Prime', monospace;
+    font-size: 0.75rem;
+    letter-spacing:0.05em;
+    color: #6b5a45;
+    margin-bottom: 26px;
+    text-transform: uppercase;
+  }
+  #intro .facts b{
+    display:block;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:1.4rem;
+    color: var(--curtain);
+    letter-spacing: 0.03em;
+  }
+
+  /* ---------- BUTTON ---------- */
+  .btn{
+    display:block;
+    width: 100%;
+    border:none;
+    cursor:pointer;
+    background: var(--curtain);
+    color: var(--gold);
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing: 0.12em;
+    font-size: 1.15rem;
+    padding: 15px 10px;
+    border-radius: 4px;
+    text-align:center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+    box-shadow: 0 6px 0 var(--curtain-deep);
+  }
+  .btn:hover{ background:#3a1620; }
+  .btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 var(--curtain-deep); }
+  .btn:focus-visible{ outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* ---------- QUIZ SCREEN ---------- */
+  #quiz{ display:none; }
+
+  .frame-track{
+    display:flex;
+    gap: 4px;
+    margin-bottom: 18px;
+  }
+  .frame-track .frame{
+    flex:1;
+    height: 6px;
+    background: var(--paper-dim);
+    border-radius: 2px;
+    overflow:hidden;
+  }
+  .frame-track .frame i{
+    display:block; height:100%; width:0%;
+    background: var(--curtain);
+    transition: width 0.35s ease;
+  }
+  .frame-track .frame.done i{ width:100%; background: var(--gold-dim); }
+  .frame-track .frame.current i{ width:100%; background: var(--curtain); }
+
+  .counter-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:'Courier Prime', monospace;
+    font-size: 0.78rem;
+    text-transform:uppercase;
+    letter-spacing: 0.08em;
+    color:#7a6a54;
+    margin-bottom: 6px;
+  }
+  .counter-row .score{
+    font-weight:700;
+    color: var(--curtain);
+  }
+
+  #question{
+    font-family:'Libre Baskerville', serif;
+    font-weight:700;
+    font-size: 1.28rem;
+    line-height:1.45;
+    color: var(--curtain);
+    margin: 14px 0 22px;
+  }
+
+  #options{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .opt{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    text-align:left;
+    width:100%;
+    border: 2px solid var(--curtain);
+    background: transparent;
+    color: var(--curtain);
+    padding: 13px 16px;
+    border-radius: 4px;
+    font-family:'Libre Baskerville', serif;
+    font-size: 1rem;
+    cursor:pointer;
+    transition: background 0.15s ease, transform 0.1s ease, color .15s ease;
+  }
+  .opt .tag{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing:0.05em;
+    width: 22px; height:22px;
+    border-radius:50%;
+    border: 2px solid currentColor;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .opt:hover:not(:disabled){ background: rgba(43,15,20,0.06); }
+  .opt:active:not(:disabled){ transform: scale(0.99); }
+  .opt:focus-visible{ outline: 3px solid var(--curtain); outline-offset: 2px; }
+
+  .opt.correct{
+    background: var(--ok);
+    border-color: var(--ok);
+    color: var(--paper);
+  }
+  .opt.wrong{
+    background: var(--bad);
+    border-color: var(--bad);
+    color: var(--paper);
+    animation: shake 0.4s ease;
+  }
+  .opt:disabled{ cursor: default; opacity: 0.85; }
+
+  @keyframes shake{
+    0%,100%{ transform: translateX(0); }
+    25%{ transform: translateX(-6px); }
+    75%{ transform: translateX(6px); }
+  }
+
+  #feedback{
+    min-height: 26px;
+    font-family:'Courier Prime', monospace;
+    font-size: 0.85rem;
+    text-align:center;
+    margin: 10px 0 4px;
+    color: #6b5a45;
+  }
+
+  .next-wrap{ margin-top: 14px; display:none; }
+
+  /* ---------- RESULT SCREEN ---------- */
+  #result{ display:none; text-align:center; }
+  #result .stub-top{
+    font-family:'Courier Prime', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform:uppercase;
+    color:#7a6a54;
+    margin-bottom: 4px;
+  }
+  #result h2{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.06em;
+    color: var(--curtain);
+    margin: 4px 0 2px;
+  }
+  #result .score-big{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 4.2rem;
+    line-height:1;
+    color: var(--curtain);
+    margin: 14px 0 2px;
+  }
+  #result .score-big span{ font-size: 1.6rem; color:#7a6a54; }
+  #result .verdict{
+    font-size: 1rem;
+    color:#4a3a2c;
+    margin: 6px 0 22px;
+    font-style: italic;
+  }
+  .reels-row{
+    display:flex;
+    justify-content:center;
+    gap: 8px;
+    margin: 4px 0 24px;
+  }
+  .reels-row .r{
+    width: 26px; height:26px;
+    border-radius:50%;
+    border: 2px solid var(--curtain);
+    position:relative;
+  }
+  .reels-row .r::after{
+    content:"";
+    position:absolute; inset: 6px;
+    border-radius:50%;
+    background: var(--curtain-dim);
+  }
+  .reels-row .r.filled::after{ background: var(--gold); }
+  .reels-row .r.filled{ border-color: var(--gold-dim); }
+
+  .stub-tear{
+    border-top: 2px dashed #cbb98f;
+    margin: 22px 0;
+    position:relative;
+  }
+
+  footer.credits{
+    margin-top: 30px;
+    font-family:'Courier Prime', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.35);
+    text-align:center;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="marquee">
+    <div class="marquee-bulbs">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <h1>Cinéfilo</h1>
+    <div class="sub">Función especial · Cuestionario de películas</div>
+    <div class="marquee-bulbs bottom">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="filmstrip">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="ticket" id="card">
+
+    <div id="intro">
+      <div class="reel">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#2b0f14" stroke-width="4"/>
+          <circle cx="50" cy="50" r="10" fill="#2b0f14"/>
+          <circle cx="50" cy="20" r="11" fill="none" stroke="#2b0f14" stroke-width="4"/>
+          <circle cx="76" cy="65" r="11" fill="none" stroke="#2b0f14" stroke-width="4"/>
+          <circle cx="24" cy="65" r="11" fill="none" stroke="#2b0f14" stroke-width="4"/>
+        </svg>
+      </div>
+      <h2>10 preguntas. Un boleto. ¿Listo?</h2>
+      <p class="lead">Directores, personajes, escenas icónicas y trivia de Óscar. Pulsa la respuesta correcta para avanzar a la siguiente escena.</p>
+      <div class="facts">
+        <div><b>10</b>Preguntas</div>
+        <div><b>4</b>Opciones c/u</div>
+        <div><b>1</b>Boleto</div>
+      </div>
+      <button class="btn" id="startBtn">▶ Comprar boleto y empezar</button>
+    </div>
+
+    <div id="quiz">
+      <div class="counter-row">
+        <span id="qCounter">Escena 01 / 10</span>
+        <span class="score">Aciertos: <span id="scoreLive">0</span></span>
+      </div>
+      <div class="frame-track" id="frameTrack"></div>
+      <div id="question"></div>
+      <div id="options"></div>
+      <div id="feedback"></div>
+      <div class="next-wrap" id="nextWrap">
+        <button class="btn" id="nextBtn">Siguiente escena ▶</button>
+      </div>
+    </div>
+
+    <div id="result">
+      <div class="stub-top">Boleto usado · Fin de la función</div>
+      <h2 id="resultTitle">¡Créditos finales!</h2>
+      <div class="score-big"><span id="scoreNum">0</span><span> / 10</span></div>
+      <div class="reels-row" id="reelsRow"></div>
+      <div class="verdict" id="verdict"></div>
+      <div class="stub-tear"></div>
+      <button class="btn" id="retryBtn">🎬 Ver la función de nuevo</button>
+    </div>
+
+  </div>
+
+  <div class="filmstrip">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <footer class="credits">Basado en «Películas» · cuestionario de trivia cinematográfica</footer>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "¿Quién dirigió la aclamada película de ciencia ficción e intriga 'Inception' (El origen) en el año 2010?",
+    options: ["Steven Spielberg", "Quentin Tarantino", "Christopher Nolan", "James Cameron"],
+    correct: "Christopher Nolan"
+  },
+  {
+    q: "¿Qué actor interpretó al icónico Vito Corleone en la primera entrega de 'El Padrino' (1972)?",
+    options: ["Al Pacino", "Marlon Brando", "Robert De Niro", "Jack Nicholson"],
+    correct: "Marlon Brando"
+  },
+  {
+    q: "¿Cuál es el icónico postre o alimento al que Forrest Gump compara la vida en la famosa película de 1994?",
+    options: ["Una caja de chocolates", "Un pastel de manzana", "Una galleta de la fortuna", "Un helado de vainilla"],
+    correct: "Una caja de chocolates"
+  },
+  {
+    q: "En la trilogía de Matrix, ¿qué color de píldora debe tomar Neo si desea despertar en el mundo real y conocer la verdad?",
+    options: ["La píldora azul", "La píldora verde", "La píldora amarilla", "La píldora roja"],
+    correct: "La píldora roja"
+  },
+  {
+    q: "¿Qué largometraje hizo historia en 2020 al convertirse en la primera película de habla no inglesa en ganar el premio Óscar a la Mejor Película?",
+    options: ["Roma", "Parasite", "Amélie", "La vida es bella"],
+    correct: "Parasite"
+  },
+  {
+    q: "¿En qué película animada de Disney se escucha la famosa canción 'Hakuna Matata'?",
+    options: ["Tarzán", "El libro de la selva", "Aladdín", "El rey león"],
+    correct: "El rey león"
+  },
+  {
+    q: "¿Cuál es el nombre del transatlántico real cuyo trágico hundimiento inspiró la película ganadora de 11 premios Óscar dirigida por James Cameron?",
+    options: ["Titanic", "Lusitania", "Britannic", "Queen Mary"],
+    correct: "Titanic"
+  },
+  {
+    q: "¿Qué galardonada trilogía cinematográfica de fantasía épica fue dirigida en su totalidad por Peter Jackson en Nueva Zelanda?",
+    options: ["Las crónicas de Narnia", "Harry Potter", "El señor de los anillos", "Piratas del Caribe"],
+    correct: "El señor de los anillos"
+  },
+  {
+    q: "¿Quién es el actor que encarna al arqueólogo y aventurero más famoso del cine en la saga 'Indiana Jones'?",
+    options: ["Harrison Ford", "Tom Cruise", "Sylvester Stallone", "Bruce Willis"],
+    correct: "Harrison Ford"
+  },
+  {
+    q: "¿Qué superhéroe de los cómics protagoniza la película de 2008 que dio inicio oficial al exitoso Universo Cinematográfico de Marvel (MCU)?",
+    options: ["Capitán América", "Thor", "Iron Man", "Spider-Man"],
+    correct: "Iron Man"
+  }
+];
+
+// shuffle options once per question so the correct answer isn't always first
+function shuffledOptions(q){
+  const arr = q.options.map((text, i) => ({text, isCorrect: text === q.correct}));
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+let current = 0;
+let score = 0;
+let locked = false;
+let order = [];
+
+const introEl = document.getElementById('intro');
+const quizEl = document.getElementById('quiz');
+const resultEl = document.getElementById('result');
+const qCounter = document.getElementById('qCounter');
+const scoreLive = document.getElementById('scoreLive');
+const questionEl = document.getElementById('question');
+const optionsEl = document.getElementById('options');
+const feedbackEl = document.getElementById('feedback');
+const nextWrap = document.getElementById('nextWrap');
+const frameTrack = document.getElementById('frameTrack');
+const LETTERS = ['A','B','C','D'];
+
+function buildFrameTrack(){
+  frameTrack.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const f = document.createElement('div');
+    f.className = 'frame';
+    f.innerHTML = '<i></i>';
+    frameTrack.appendChild(f);
+  });
+}
+
+function updateFrameTrack(){
+  [...frameTrack.children].forEach((f, i) => {
+    f.classList.remove('done', 'current');
+    if(i < current) f.classList.add('done');
+    else if(i === current) f.classList.add('current');
+  });
+}
+
+function loadQuestion(){
+  locked = false;
+  feedbackEl.textContent = '';
+  nextWrap.style.display = 'none';
+  const q = QUESTIONS[current];
+  order = shuffledOptions(q);
+  qCounter.textContent = `Escena ${String(current+1).padStart(2,'0')} / ${QUESTIONS.length}`;
+  scoreLive.textContent = score;
+  questionEl.textContent = q.q;
+  optionsEl.innerHTML = '';
+  order.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = `<span class="tag">${LETTERS[i]}</span><span>${opt.text}</span>`;
+    btn.addEventListener('click', () => selectOption(btn, opt));
+    optionsEl.appendChild(btn);
+  });
+  updateFrameTrack();
+}
+
+function selectOption(btn, opt){
+  if(locked) return;
+  locked = true;
+  const allBtns = [...optionsEl.children];
+
+  if(opt.isCorrect){
+    btn.classList.add('correct');
+    score++;
+    feedbackEl.textContent = '¡Corte! Respuesta correcta.';
+  } else {
+    btn.classList.add('wrong');
+    feedbackEl.textContent = 'Corte... no era esa. Mira la correcta en verde.';
+    const correctBtn = allBtns.find(b => b.textContent.includes(QUESTIONS[current].correct));
+    if(correctBtn) correctBtn.classList.add('correct');
+  }
+
+  allBtns.forEach(b => b.disabled = true);
+  scoreLive.textContent = score;
+  nextWrap.style.display = 'block';
+}
+
+function nextQuestion(){
+  current++;
+  if(current >= QUESTIONS.length){
+    showResult();
+  } else {
+    loadQuestion();
+  }
+}
+
+function showResult(){
+  quizEl.style.display = 'none';
+  resultEl.style.display = 'block';
+  document.getElementById('scoreNum').textContent = score;
+
+  const reelsRow = document.getElementById('reelsRow');
+  reelsRow.innerHTML = '';
+  for(let i = 0; i < QUESTIONS.length; i++){
+    const r = document.createElement('div');
+    r.className = 'r' + (i < score ? ' filled' : '');
+    reelsRow.appendChild(r);
+  }
+
+  const titleEl = document.getElementById('resultTitle');
+  const verdictEl = document.getElementById('verdict');
+  if(score === 10){
+    titleEl.textContent = '¡Función perfecta!';
+    verdictEl.textContent = 'Crítica cinco estrellas: conoces el cine de memoria.';
+  } else if(score >= 8){
+    titleEl.textContent = '¡Casi Óscar!';
+    verdictEl.textContent = 'Un cinéfilo de primera fila, sin duda.';
+  } else if(score >= 5){
+    titleEl.textContent = 'Buena función';
+    verdictEl.textContent = 'Conoces bastante, pero te falta ver algunos clásicos más.';
+  } else {
+    titleEl.textContent = 'Sesión de repaso';
+    verdictEl.textContent = 'Toca maratón de clásicos antes de la próxima función.';
+  }
+}
+
+function resetQuiz(){
+  current = 0;
+  score = 0;
+  resultEl.style.display = 'none';
+  quizEl.style.display = 'block';
+  buildFrameTrack();
+  loadQuestion();
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  introEl.style.display = 'none';
+  quizEl.style.display = 'block';
+  buildFrameTrack();
+  loadQuestion();
+});
+
+document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+document.getElementById('retryBtn').addEventListener('click', resetQuiz);
+</script>
+
+</body>
+</html>
